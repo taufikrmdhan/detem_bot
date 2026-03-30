@@ -1,5 +1,44 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Momentum trading bot (paper)
+
+This repo includes a simple **momentum bot** that:
+
+- Fetches candles from **TwelveData**
+- Ranks symbols by momentum \(\%\) over `BOT_LOOKBACK_BARS`
+- Paper-buys top momentum symbols above `BOT_BUY_THRESHOLD_PCT`
+- Paper-sells held symbols when momentum drops below `BOT_SELL_THRESHOLD_PCT`
+- Saves state/logs under `data/`
+- Optionally sends a Telegram summary
+
+### Setup
+
+1) Copy `.env.example` to `.env.local` and fill values.
+
+2) Run the bot once:
+
+```bash
+npm run bot:run
+```
+
+3) Start the web app and open the dashboard:
+
+```bash
+npm run dev
+```
+
+Then open `http://localhost:3000/bot`.
+
+### API
+
+- `POST /api/bot/run` with header `x-bot-secret: <BOT_RUN_SECRET>`
+- `GET /api/bot/status` with header `x-bot-secret: <BOT_RUN_SECRET>`
+
+### Notes
+
+- **Default mode is `paper`**. Do not switch to `live` until you add an exchange execution layer and you fully understand the risk.
+- Treat any committed/shared `.env.local` keys as compromised and rotate them.
+
 ## Getting Started
 
 First, run the development server:
