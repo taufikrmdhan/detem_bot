@@ -4,7 +4,6 @@ const envSchema = z.object({
   TWELVE_DATA_KEY: z.string().min(1),
   TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
   MY_CHAT_ID: z.string().min(1).optional(),
-  BOT_RUN_SECRET: z.string().min(12),
   BOT_UNIVERSE: z.string().min(1).default("AAPL,MSFT,NVDA,TSLA"),
   BOT_INTERVAL: z.string().min(1).default("1h"),
   BOT_OUTPUTSIZE: z.coerce.number().int().min(50).max(5000).default(300),
@@ -26,6 +25,17 @@ export function getBotEnv(): BotEnv {
       .map((i) => `${i.path.join(".")}: ${i.message}`)
       .join("\n");
     throw new Error(`Invalid bot env:\n${message}`);
+  }
+  return parsed.data;
+}
+
+const botRunSecretSchema = z.string().min(12);
+
+export function getBotRunSecret(): string {
+  const raw = process.env.BOT_RUN_SECRET;
+  const parsed = botRunSecretSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new Error("BOT_RUN_SECRET is not set (min 12 chars).");
   }
   return parsed.data;
 }

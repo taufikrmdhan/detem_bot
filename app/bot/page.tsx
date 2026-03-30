@@ -9,10 +9,14 @@ function getBaseUrl() {
 }
 
 async function fetchStatus() {
+  const secret = process.env.BOT_RUN_SECRET;
+  if (!secret || secret.length < 12) {
+    throw new Error("BOT_RUN_SECRET is not set (min 12 chars).");
+  }
   const base = getBaseUrl();
   const res = await fetch(`${base}/api/bot/status?limit=30`, {
     headers: {
-      "x-bot-secret": process.env.BOT_RUN_SECRET ?? "",
+      "x-bot-secret": secret,
     },
     cache: "no-store",
   });
@@ -32,7 +36,42 @@ async function fetchStatus() {
 }
 
 export default async function BotPage() {
-  const data = await fetchStatus();
+  let data: Awaited<ReturnType<typeof fetchStatus>> | null = null;
+  let error: string | null = null;
+  try {
+    data = await fetchStatus();
+  } catch (e) {
+    error = e instanceof Error ? e.message : "unknown error";
+  }
+
+  if (!data) {
+    return (
+      <div className="flex flex-1 items-start justify-center bg-zinc-50 dark:bg-black px-6 py-10">
+        <div className="w-full max-w-2xl space-y-4">
+          <h1 className="text-2xl font-semibold tracking-tight">Detem Bot</h1>
+          <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-950 p-5">
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Dashboard butuh <code className="font-mono">BOT_RUN_SECRET</code> supaya bisa
+              memanggil <code className="font-mono">/api/bot/status</code>.
+            </p>
+            <pre className="mt-3 text-xs overflow-auto rounded-xl bg-black/[.03] dark:bg-white/[.06] p-3">
+              {error ?? "No data"}
+            </pre>
+            <p className="mt-3 text-sm">
+              Tambahkan ke <code className="font-mono">.env.local</code>:
+            </p>
+            <pre className="mt-2 text-xs overflow-auto rounded-xl bg-black/[.03] dark:bg-white/[.06] p-3">
+              BOT_RUN_SECRET=your-long-random-secret
+            </pre>
+            <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-400">
+              Setelah itu restart <code className="font-mono">npm run dev</code>.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const positions = Object.entries(data.state.positions);
 
   return (
