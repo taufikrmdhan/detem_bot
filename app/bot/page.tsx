@@ -1,45 +1,26 @@
 export const runtime = "nodejs";
 
-function getBaseUrl() {
-  const explicit = process.env.NEXT_PUBLIC_BASE_URL;
-  if (explicit) return explicit.replace(/\/+$/, "");
-  const vercelUrl = process.env.VERCEL_URL;
-  if (vercelUrl) return `https://${vercelUrl}`;
-  return "http://localhost:3000";
-}
-
-async function fetchStatus() {
-  const secret = process.env.BOT_RUN_SECRET;
-  if (!secret || secret.length < 12) {
-    throw new Error("BOT_RUN_SECRET is not set (min 12 chars).");
-  }
-  const base = getBaseUrl();
-  const res = await fetch(`${base}/api/bot/status?limit=30`, {
-    headers: {
-      "x-bot-secret": secret,
-    },
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`status ${res.status}: ${txt}`);
-  }
-  return (await res.json()) as {
-    state: {
-      updatedAt: string;
-      mode: string;
-      cashUsd: number;
-      positions: Record<string, { qty: number; entryPrice: number; entryAt: string }>;
-    };
-    logs: string[];
-  };
-}
+import { getBotEnv } from "@/lib/bot/env";
+import { readLastLogLines, readStateOrInit } from "@/lib/bot/storage";
 
 export default async function BotPage() {
-  let data: Awaited<ReturnType<typeof fetchStatus>> | null = null;
+  let data:
+    | {
+        state: {
+          updatedAt: string;
+          mode: string;
+          cashUsd: number;
+          positions: Record<string, { qty: number; entryPrice: number; entryAt: string }>;
+        };
+        logs: string[];
+      }
+    | null = null;
   let error: string | null = null;
   try {
-    data = await fetchStatus();
+    const env = getBotEnv();
+    const state = await readStateOrInit({ mode: env.BOT_MODE });
+    const logs = await readLastLogLines(30);
+    data = { state, logs };
   } catch (e) {
     error = e instanceof Error ? e.message : "unknown error";
   }
@@ -51,20 +32,14 @@ export default async function BotPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Detem Bot</h1>
           <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-950 p-5">
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Dashboard butuh <code className="font-mono">BOT_RUN_SECRET</code> supaya bisa
-              memanggil <code className="font-mono">/api/bot/status</code>.
+              Dashboard gagal membaca state/log bot.
             </p>
             <pre className="mt-3 text-xs overflow-auto rounded-xl bg-black/[.03] dark:bg-white/[.06] p-3">
               {error ?? "No data"}
             </pre>
-            <p className="mt-3 text-sm">
-              Tambahkan ke <code className="font-mono">.env.local</code>:
-            </p>
-            <pre className="mt-2 text-xs overflow-auto rounded-xl bg-black/[.03] dark:bg-white/[.06] p-3">
-              BOT_RUN_SECRET=your-long-random-secret
-            </pre>
             <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-400">
-              Setelah itu restart <code className="font-mono">npm run dev</code>.
+              Pastikan env seperti <code className="font-mono">TWELVE_DATA_KEY</code> sudah
+              diset, dan bot sudah pernah dijalankan.
             </p>
           </div>
         </div>
@@ -129,8 +104,9 @@ export default async function BotPage() {
             {data.logs.join("\n")}
           </pre>
           <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-            Endpoint ini butuh header <code className="font-mono">x-bot-secret</code>.
-            Dashboard akan jalan di local dev (server-side fetch pakai env).
+            Endpoint bot masih butuh header <code className="font-mono">x-bot-secret</code>,
+            tapi dashboard tidak memanggil endpoint tersebut (biar tidak kena Vercel
+            protection).
           </p>
         </div>
       </div>
