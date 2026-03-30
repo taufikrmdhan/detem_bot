@@ -1,8 +1,16 @@
 import { promises as fs } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import type { BotState } from "./types";
 
-const dataDir = path.join(process.cwd(), "data");
+function resolveDataDir() {
+  // On Vercel/serverless, the deployment filesystem is read-only.
+  // Use /tmp (writable) to avoid ENOENT/EPERM.
+  if (process.env.VERCEL) return path.join(os.tmpdir(), "detem_bot_data");
+  return path.join(process.cwd(), "data");
+}
+
+const dataDir = resolveDataDir();
 const statePath = path.join(dataDir, "state.json");
 const logPath = path.join(dataDir, "bot-log.jsonl");
 

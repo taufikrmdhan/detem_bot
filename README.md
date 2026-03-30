@@ -38,6 +38,7 @@ Then open `http://localhost:3000/bot`.
 
 - **Default mode is `paper`**. Do not switch to `live` until you add an exchange execution layer and you fully understand the risk.
 - Treat any committed/shared `.env.local` keys as compromised and rotate them.
+- On **Vercel**, bot state/logs are stored under `/tmp` (ephemeral). For persistent storage in production, use an external DB/KV.
 
 ## Getting Started
 
