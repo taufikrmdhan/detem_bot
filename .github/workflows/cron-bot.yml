@@ -1,0 +1,25 @@
+name: Run bot cron
+
+on:
+  schedule:
+    - cron: "0 * * * *" # every hour (UTC)
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call bot run endpoint
+        env:
+          BOT_RUN_URL: ${{ secrets.BOT_RUN_URL }}
+          BOT_RUN_SECRET: ${{ secrets.BOT_RUN_SECRET }}
+        run: |
+          if [ -z "$BOT_RUN_URL" ] || [ -z "$BOT_RUN_SECRET" ]; then
+            echo "Missing BOT_RUN_URL or BOT_RUN_SECRET GitHub Secrets" >&2
+            exit 1
+          fi
+          curl -sS -X POST "$BOT_RUN_URL" \
+            -H "x-bot-secret: $BOT_RUN_SECRET" \
+            -H "content-type: application/json" \
+            --data "{}"
+
