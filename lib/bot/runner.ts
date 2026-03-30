@@ -149,11 +149,16 @@ export async function runMomentumBotOnce(): Promise<BotRunResult> {
     `SELL: ${summarySells.length ? summarySells.map((s) => s.symbol).join(", ") : "-"}\n` +
     `Cash: $${state.cashUsd.toFixed(2)} | Positions: ${Object.keys(state.positions).length}`;
 
-  await sendTelegramMessage({
-    token: env.TELEGRAM_BOT_TOKEN,
-    chatId: env.MY_CHAT_ID,
-    text: summaryText,
-  });
+  try {
+    await sendTelegramMessage({
+      token: env.TELEGRAM_BOT_TOKEN,
+      chatId: env.MY_CHAT_ID,
+      text: summaryText,
+    });
+  } catch (e) {
+    // Notifications are best-effort; don't fail trading loop.
+    console.warn("[telegram] failed:", e instanceof Error ? e.message : e);
+  }
 
   return result;
 }
